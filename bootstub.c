@@ -26,7 +26,6 @@
 #include "ssp-uart.h"
 #include "mb.h"
 #include "sfi.h"
-#include <bootimg.h>
 
 #include <stdint.h>
 #include <stddef.h>
@@ -56,6 +55,44 @@ static u32 sps_load_adrs;
 
 static memory_map_t mb_mmap[E820MAX];
 u32 mb_magic, mb_info;
+
+// The bootloader expects the structure of boot_img_hdr with header
+// version 0 to be as follows:
+struct boot_img_hdr {
+    // Must be BOOT_MAGIC.
+    uint8_t magic[BOOT_MAGIC_SIZE];
+    uint32_t kernel_size; /* size in bytes */
+    uint32_t kernel_addr; /* physical load addr */
+    uint32_t ramdisk_size; /* size in bytes */
+    uint32_t ramdisk_addr; /* physical load addr */
+    uint32_t second_size; /* size in bytes */
+    uint32_t second_addr; /* physical load addr */
+    uint32_t tags_addr; /* physical addr for kernel tags (if required) */
+    uint32_t page_size; /* flash page size we assume */
+    // Version of the boot image header.
+    uint32_t header_version;
+    // Operating system version and security patch level.
+    // For version "A.B.C" and patch level "Y-M-D":
+    //   (7 bits for each of A, B, C; 7 bits for (Y-2000), 4 bits for M)
+    //   os_version = A[31:25] B[24:18] C[17:11] (Y-2000)[10:4] M[3:0]
+    uint32_t os_version;
+#if __cplusplus
+    void SetOsVersion(unsigned major, unsigned minor, unsigned patch) {
+        os_version &= ((1 << 11) - 1);
+        os_version |= (((major & 0x7f) << 25) | ((minor & 0x7f) << 18) | ((patch & 0x7f) << 11));
+    }
+    void SetOsPatchLevel(unsigned year, unsigned month) {
+        os_version &= ~((1 << 11) - 1);
+        os_version |= (((year - 2000) & 0x7f) << 4) | ((month & 0xf) << 0);
+    }
+#endif
+    uint8_t name[BOOT_NAME_SIZE]; /* asciiz product name */
+    uint8_t cmdline[BOOT_ARGS_SIZE];
+    uint32_t id[8]; /* timestamp / checksum / sha1 / etc */
+    // Supplemental command line data; kept here to maintain
+    // binary compatibility with older versions of mkbootimg.
+    uint8_t extra_cmdline[BOOT_EXTRA_ARGS_SIZE];
+} __attribute__((packed));
 
 struct gdt_ptr {
         u16 len;

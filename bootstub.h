@@ -72,4 +72,11 @@ int mid_identify_cpu(void);
 void bs_printk(const char *str);
 #endif
 
+// boot_img_hdr_v0 struct
+#define BOOT_MAGIC "ANDROID!"
+#define BOOT_MAGIC_SIZE 8
+#define BOOT_NAME_SIZE 16
+#define BOOT_ARGS_SIZE 512
+#define BOOT_EXTRA_ARGS_SIZE 1024
+
 #endif
