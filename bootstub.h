@@ -26,6 +26,11 @@
 #define INITRD_SIZE_OFFSET	(BZIMAGE_SIZE_OFFSET + 4)
 #define SPI_UART_SUPPRESSION	(INITRD_SIZE_OFFSET + 4)
 
+/* bootstub/android.mk definitions */
+#define STACK_OFFSET		0x10F00000
+#define CMDLINE_SIZE		0x400
+#define AOSP_HEADER_ADDRESS	0x10007800
+
 #define SPI_TYPE		(SPI_UART_SUPPRESSION + 4) /*0:SPI0  1:SPI1*/
 #define SPI_0		0
 #define SPI_1		1
@@ -53,7 +58,7 @@
 #define GDT_ENTRY_BOOT_DS       (GDT_ENTRY_BOOT_CS + 1)
 #define __BOOT_DS               (GDT_ENTRY_BOOT_DS * 8)
 
-#ifdef __ASSEMBLY__
+#ifdef __ASSEMBLER__
 #define GDT_ENTRY(flags, base, limit)			\
 	((((base)  & 0xff000000) << (56-24)) |	\
 	 (((flags) & 0x0000f0ff) << 40) |	\

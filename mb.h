@@ -41,7 +41,7 @@
 #define MBI_LOADERNAME (1u<< 9)
 #define MBI_APM        (1u<<10)
 
-#ifndef __ASSEMBLY__
+#ifndef __ASSEMBLER__
 
 /* The symbol table for a.out.  */
 typedef struct {
@@ -121,7 +121,7 @@ typedef struct {
 } memory_map_t;
 
 
-#endif /* __ASSEMBLY__ */
+#endif /* __ASSEMBLER__ */
 
 
 #endif /* _BOOTSTUB_MB_H */
