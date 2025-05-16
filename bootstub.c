@@ -346,7 +346,6 @@ int bootstub(void)
 		bs_printk("Using multiboot image to boot\n");
 
 	bs_printk("Jump to kernel 32bit entry\n");
-	FATAL_HANG();
 	return jmp;
 }
 
