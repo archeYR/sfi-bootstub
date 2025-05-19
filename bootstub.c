@@ -162,7 +162,7 @@ static void setup_boot_params(struct boot_params *bp, struct setup_header *sh)
 	bp->hdr.hardware_subarch = X86_SUBARCH_MRST;
 }
 
-static u32 bzImage_setup(struct boot_params *bp, struct setup_header *sh)
+static u32 bzImage_setup(struct boot_params *bp)
 {
 	void *cmdline = (void *)BOOT_CMDLINE_OFFSET;
 	struct boot_img_hdr *aosp = (struct boot_img_hdr *)AOSP_HEADER_ADDRESS;
@@ -341,7 +341,7 @@ int bootstub(void)
 	jmp = multiboot_setup();
 	if (!jmp) {
 		bs_printk("Using bzImage to boot\n");
-		jmp = bzImage_setup(bp, sh);
+		jmp = bzImage_setup(bp);
 	} else
 		bs_printk("Using multiboot image to boot\n");
 
