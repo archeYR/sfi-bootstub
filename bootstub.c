@@ -122,14 +122,6 @@ static size_t strnlen(const char *s, size_t maxlen)
         return (es - s);
 }
 
-static const char *strnchr(const char *s, int c, size_t maxlen)
-{
-    int i;
-    for (i = 0; i < maxlen && *s != c; s++, i++)
-        ;
-    return s;
-}
-
 int strncmp(const char *cs, const char *ct, size_t count)
 {
 	unsigned char c1, c2;
@@ -248,62 +240,60 @@ static void setup_idt(void)
 
 static u32 multiboot_setup(void)
 {
-	u32 *magic, *mb_image, i;
-	char *src, *dst;
+	u32 *header_magic, *mb_image, i;
 	u32 mb_size;
+	struct boot_img_hdr *aosp = (struct boot_img_hdr *)AOSP_HEADER_ADDRESS;
 	static module_t modules[2];
+	multiboot_header_t *mb_header;
 	static multiboot_info_t mb = {
-		.flags = MBI_CMDLINE | MBI_MODULES | MBI_MEMMAP | MBI_DRIVES,
+		.flags = MBI_CMDLINE | MBI_MODULES | MBI_MEMMAP | MBI_FB,
 		.mmap_addr = (u32)mb_mmap,
-		.mods_count = 3,
+		.mods_count = 2,
 		.mods_addr = (u32)modules,
 	};
 
-	mb_size =  *(u32 *)MB_SIZE_OFFSET;
-	/* do we have a multiboot image? */
-	if (mb_size == 0) {
-		return 0;
-        }
-
-	/* Compute the actual offset of the Xen image */
-	mb_image = (u32*)(
-		BZIMAGE_OFFSET
-		+ *(u32 *)BZIMAGE_SIZE_OFFSET
-		+ *(u32 *)INITRD_SIZE_OFFSET
-	);
-
-	/* the multiboot signature should be located in the first 8192 bytes */
-	for (magic = mb_image; magic < mb_image + 2048; magic++)
-		if (*magic == MULTIBOOT_HEADER_MAGIC)
-			break;
-	if (*magic != MULTIBOOT_HEADER_MAGIC) {
-		return 0;
-        }
-
-	mb.cmdline = (u32)strnchr((char *)CMDLINE_OFFSET, '$', CMDLINE_SIZE) + 1;
-	dst = (char *)mb.cmdline + strnlen((const char *)mb.cmdline, CMDLINE_SIZE) - 1;
-	*dst = ' ';
-	dst++;
-	src = (char *)CMDLINE_OFFSET;
-	for (i = 0 ;i < strnlen((const char *)CMDLINE_OFFSET, CMDLINE_SIZE);i++) {
-		if (!strncmp(src, "capfreq=", 8)) {
-			while (*src != ' ' && *src != 0) {
-				*dst = *src;
-				dst++;
-				src++;
-			}
-			break;
-		}
-		src++;
+	if (is_image_aosp(aosp->magic)) {
+		mb.cmdline = (u32)aosp->cmdline;
+		mb_size = aosp->kernel_size + aosp->ramdisk_size;
+		mb_image = (u32 *)aosp->kernel_addr;
+	} else {
+		mb.cmdline = CMDLINE_OFFSET;
+		mb_size =  *(u32 *)BZIMAGE_SIZE_OFFSET + *(u32 *)INITRD_SIZE_OFFSET;
+		mb_image = (u32 *)BZIMAGE_OFFSET;
 	}
 
-	/* fill in the multiboot module information: dom0 kernel + initrd + Platform Services Image */
-	modules[0].mod_start = BZIMAGE_OFFSET;
-	modules[0].mod_end = BZIMAGE_OFFSET + *(u32 *)BZIMAGE_SIZE_OFFSET;
-	modules[0].string = CMDLINE_OFFSET;
+	if (mb_size == 0)
+		return 0;
 
-	modules[1].mod_start = modules[0].mod_end ;
-	modules[1].mod_end = modules[1].mod_start + *(u32 *)INITRD_SIZE_OFFSET;
+	/* the multiboot signature should be located in the first 8192 bytes */
+	for (header_magic = mb_image; header_magic < mb_image + 2048; header_magic++)
+		if (*header_magic == MULTIBOOT_HEADER_MAGIC)
+			break;
+
+	/* Fallback to bzImage setup if this isn't a Multiboot image */
+	if (*header_magic != MULTIBOOT_HEADER_MAGIC)
+		return 0;
+
+	mb_header = (multiboot_header_t *)header_magic;
+
+	if (mb_header->checksum + (mb_header->magic + mb_header->flags) != 0) {
+		printf("Invalid Multiboot image! Expected checksum 0x%x, got 0x%x \n",
+			   -mb_header->checksum, (mb_header->magic + mb_header->flags));
+		FATAL_HANG();
+	}
+
+	printf("Multiboot signature found! Image entry address is 0x%x\n", mb_header->entry_addr);
+
+	/* fill in the multiboot module information: Multiboot image and initial ramdisk */
+	modules[0].mod_start = mb_header->load_addr;
+	modules[0].mod_end = mb_header->load_addr +
+	((is_image_aosp(aosp->magic)) ? aosp->kernel_size : *(u32 *)BZIMAGE_SIZE_OFFSET);
+	modules[0].string = 0;
+
+	modules[1].mod_start =
+	(is_image_aosp(aosp->magic)) ? aosp->ramdisk_addr : (BZIMAGE_OFFSET + *(u32 *)BZIMAGE_SIZE_OFFSET);
+	modules[1].mod_end = modules[1].mod_start +
+	((is_image_aosp(aosp->magic)) ? aosp->ramdisk_size : *(u32 *)INITRD_SIZE_OFFSET);
 	modules[1].string = 0;
 
 	for(i = 0; i < E820MAX; i++)
@@ -311,10 +301,12 @@ static u32 multiboot_setup(void)
 			break;
 	mb.mmap_length = i * sizeof(memory_map_t);
 
+	/* relocate Multiboot image to start address */
+	memcpy((u8 *)mb_header->load_addr, mb_image, mb_size);
 	mb_info = (u32)&mb;
 	mb_magic = MULTIBOOT_BOOTLOADER_MAGIC;
 
-	return (u32)mb_image;
+	return mb_header->entry_addr;
 }
 
 int bootstub(void)

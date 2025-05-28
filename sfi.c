@@ -48,7 +48,6 @@ int sfi_add_e820_entry(struct boot_params *bp, memory_map_t *mb_mmap, u64 start,
 	int	i;
 
 	if (!bp || !mb_mmap) {
-		bs_printk("Bootstub: sfi_add_e820_entry failed\n");
 		return -1;
 	}
 
@@ -97,7 +96,6 @@ void sfi_setup_mmap(struct boot_params *bp, memory_map_t *mb_mmap)
 	int i, num, type;
 
 	if (!bp || !mb_mmap) {
-		bs_printk("Bootstub: sfi_setup_mmap failed\n");
 		return;
 	}
 
@@ -106,7 +104,6 @@ void sfi_setup_mmap(struct boot_params *bp, memory_map_t *mb_mmap)
 	/* search for sfi mmap table */
 	sb = (struct sfi_table *)sfi_search_mmap(SFI_BASE_ADDR, SFI_LENGTH);
 	if (!sb) {
-		bs_printk("Bootstub: SFI MMAP table not found\n");
 		return;
 	}
 	bs_printk("Bootstub: map SFI MMAP to e820 table\n");

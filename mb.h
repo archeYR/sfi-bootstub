@@ -40,6 +40,8 @@
 #define MBI_BIOSCONFIG (1u<< 8)
 #define MBI_LOADERNAME (1u<< 9)
 #define MBI_APM        (1u<<10)
+#define MBI_VBE        (1u<<11)
+#define MBI_FB         (1u<<12)
 
 #ifndef __ASSEMBLER__
 
@@ -99,7 +101,49 @@ typedef struct {
 
 	/* Valid if flags sets MBI_APM */
 	u32 apm_table;
+
+	/* Valid if flags sets MBI_VBE */
+	u32 vbe_control_info;
+	u32 vbe_mode_info;
+	u16 vbe_mode;
+	u16 vbe_interface_seg;
+	u16 vbe_interface_off;
+	u16 vbe_interface_len;
+
+	/* Valid if flags sets MBI_FB */
+	u64 framebuffer_addr;
+	u32 framebuffer_pitch;
+	u32 framebuffer_width;
+	u32 framebuffer_height;
+	u8 framebuffer_bpp;
+	u8 framebuffer_type;
+	u8 framebuffer_red_field_position;
+	u8 framebuffer_red_mask_size;
+	u8 framebuffer_green_field_position;
+	u8 framebuffer_green_mask_size;
+	u8 framebuffer_blue_field_position;
+	u8 framebuffer_blue_mask_size;
 } multiboot_info_t;
+
+/* The Multiboot header.  */
+typedef struct {
+	u32 magic;
+	u32 flags;
+	u32 checksum;
+
+	/* Valid if flag sets bit 16 */
+	u32 header_addr;
+	u32 load_addr;
+	u32 load_end_addr;
+	u32 bss_end_addr;
+	u32 entry_addr;
+
+	/* Valid if flag sets bit 2 */
+	u32 mode_type;
+	u32 width;
+	u32 height;
+	u32 depth;
+} multiboot_header_t;
 
 /* The module structure.  */
 typedef struct {
@@ -112,12 +156,13 @@ typedef struct {
 /* The memory map. Be careful that the offset 0 is base_addr_low
    but no size.  */
 typedef struct {
-	u32 size;
+	//u32 size;
 	u32 base_addr_low;
 	u32 base_addr_high;
 	u32 length_low;
 	u32 length_high;
 	u32 type;
+	u32 size;
 } memory_map_t;
 
 
