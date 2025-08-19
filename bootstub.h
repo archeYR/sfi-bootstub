@@ -46,8 +46,20 @@
          ((u64)(limit & 0x00ff0000) << 32) |    \
          ((u64)(base & 0x00ffffff) << 16) |     \
          ((u64)(limit & 0x0000ffff)))
-void bs_printk(const char *str);
-void bs_print(const char *str, unsigned int value);
+#define NANOPRINTF_IMPLEMENTATION
+#define NANOPRINTF_VISIBILITY_STATIC
+
+#define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 0
+#define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 0
+#define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 0
+#define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 0
+#define NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS 0
+#define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 0
+#define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
+#define NANOPRINTF_USE_ALT_FORM_FLAG 0
+
+#include "nanoprintf.h"
+extern void simplefb_putc(int character, void *ctx);
 #endif
 
 // boot_img_hdr_v0 struct

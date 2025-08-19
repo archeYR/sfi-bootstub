@@ -7,8 +7,8 @@ struct simplefb_data {
     u16    PixelsPerScanLine;
 };
 
-#define CHAR_WIDTH  8
-#define CHAR_HEIGHT 16
+#define SFB_CHAR_WIDTH  8
+#define SFB_CHAR_HEIGHT 16
 #define TOP_BOTTOM_LINES 0
 
 /* GMA device IDs */
@@ -44,4 +44,3 @@ struct simplefb_data {
 #define ATTR(cFore, cBack)  ((cBack << 4) | cFore)
 
 extern void simplefb_init();
-extern void bs_simplefb_putc(unsigned char character);

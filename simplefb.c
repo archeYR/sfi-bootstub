@@ -74,12 +74,12 @@ OutputChar(unsigned char Char, unsigned X, unsigned Y, unsigned long FgColor, un
     Delta = (framebufferData.PixelsPerScanLine * 4 + 3) & ~ 0x3;
     FontPtr = (u8 *)FONT_OFFSET + Char * 16;
     Pixel = (unsigned long *) ((char *) framebufferData.BaseAddress +
-            (Y * CHAR_HEIGHT + TOP_BOTTOM_LINES) *  Delta + X * CHAR_WIDTH * 4);
+            (Y * SFB_CHAR_HEIGHT + TOP_BOTTOM_LINES) *  Delta + X * SFB_CHAR_WIDTH * 4);
 
-    for (Line = 0; Line < CHAR_HEIGHT; Line++)
+    for (Line = 0; Line < SFB_CHAR_HEIGHT; Line++)
     {
         Mask = 0x80;
-        for (Col = 0; Col < CHAR_WIDTH; Col++)
+        for (Col = 0; Col < SFB_CHAR_WIDTH; Col++)
         {
             Pixel[Col] = (0 != (FontPtr[Line] & Mask) ? FgColor : BgColor);
             Mask = Mask >> 1;
@@ -94,9 +94,9 @@ ScrollUp()
     unsigned long BgColor, Dummy;
     unsigned long Delta;
     Delta = (framebufferData.PixelsPerScanLine * 4 + 3) & ~ 0x3;
-    unsigned long PixelCount = framebufferData.ScreenWidth * CHAR_HEIGHT *
-                       (((framebufferData.ScreenHeight - 2 * TOP_BOTTOM_LINES) / CHAR_HEIGHT) - 1);
-    unsigned long *Src = (unsigned long *)((unsigned char *)framebufferData.BaseAddress + (CHAR_HEIGHT + TOP_BOTTOM_LINES) * Delta);
+    unsigned long PixelCount = framebufferData.ScreenWidth * SFB_CHAR_HEIGHT *
+                       (((framebufferData.ScreenHeight - 2 * TOP_BOTTOM_LINES) / SFB_CHAR_HEIGHT) - 1);
+    unsigned long *Src = (unsigned long *)((unsigned char *)framebufferData.BaseAddress + (SFB_CHAR_HEIGHT + TOP_BOTTOM_LINES) * Delta);
     unsigned long *Dst = (unsigned long *)((unsigned char *)framebufferData.BaseAddress + TOP_BOTTOM_LINES * Delta);
 
     AttrToColors(ATTR(COLOR_WHITE, COLOR_BLACK), &Dummy, &BgColor);
@@ -104,7 +104,7 @@ ScrollUp()
     while (PixelCount--)
         *Dst++ = *Src++;
 
-    for (PixelCount = 0; PixelCount < framebufferData.ScreenWidth * CHAR_HEIGHT; PixelCount++)
+    for (PixelCount = 0; PixelCount < framebufferData.ScreenWidth * SFB_CHAR_HEIGHT; PixelCount++)
         *Dst++ = BgColor;
 }
 
@@ -121,19 +121,19 @@ PutChar(int Ch, unsigned char Attr, unsigned X, unsigned Y)
 }
 
 void
-bs_simplefb_putc(unsigned char character)
+simplefb_putc(int character, void *ctx)
 {
     if (framebufferData.BaseAddress == 0xdeaddead ||
         framebufferData.BaseAddress == 0)
         return;
 
-    if (y >= framebufferData.ScreenHeight/CHAR_HEIGHT)
+    if (y >= framebufferData.ScreenHeight/SFB_CHAR_HEIGHT)
     {
         ScrollUp();
         y--;
     }
 
-    if (character == '\n' || x >= framebufferData.ScreenWidth/CHAR_WIDTH)
+    if (character == '\n' || x >= framebufferData.ScreenWidth/SFB_CHAR_WIDTH)
     {
         y++;
         x = 0;

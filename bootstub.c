@@ -25,7 +25,6 @@
 #include "mb.h"
 #include "sfi.h"
 #include "simplefb.h"
-#include "printf.h"
 
 #include <stdint.h>
 #include <stddef.h>
@@ -160,6 +159,7 @@ static u32 bzImage_setup(struct boot_params *bp)
 	struct boot_img_hdr *aosp = (struct boot_img_hdr *)AOSP_HEADER_ADDRESS;
 	size_t cmdline_len, extra_cmdline_len;
 	u8 *initramfs, *ptr;
+	u32 bzimage_size;
 
 	if (is_image_aosp(aosp->magic)) {
 		ptr = (u8*)aosp->kernel_addr;
@@ -177,6 +177,7 @@ static u32 bzImage_setup(struct boot_params *bp)
 		bp->hdr.ramdisk_size = aosp->ramdisk_size;
 
 		initramfs = (u8 *)aosp->ramdisk_addr;
+		bzimage_size = aosp->kernel_size;
 	} else {
 		ptr = (u8*)BZIMAGE_OFFSET;
 		cmdline_len = strnlen((const char *)CMDLINE_OFFSET, CMDLINE_SIZE);
@@ -190,6 +191,7 @@ static u32 bzImage_setup(struct boot_params *bp)
 		bp->hdr.ramdisk_size = *(u32 *)INITRD_SIZE_OFFSET;
 
 		initramfs = (u8 *)BZIMAGE_OFFSET + *(u32 *)BZIMAGE_SIZE_OFFSET;
+		bzimage_size = *(u32 *)BZIMAGE_SIZE_OFFSET;
 	}
 
 	bp->hdr.cmd_line_ptr = BOOT_CMDLINE_OFFSET;
@@ -197,11 +199,16 @@ static u32 bzImage_setup(struct boot_params *bp)
 #ifndef BUILD_RAMDUMP
 	bp->hdr.ramdisk_image = (bp->alt_mem_k*1024 - bp->hdr.ramdisk_size) & 0xFFFFF000;
 
-	if (*initramfs) {
-		bs_printk("Relocating initramfs to high memory ...\n");
+	if (!bzimage_size) {
+		npf_pprintf(&simplefb_putc, NULL, "Nothing to boot!\n");
+		FATAL_HANG();
+	}
+
+	if (bp->hdr.ramdisk_size) {
+		npf_pprintf(&simplefb_putc, NULL, "Relocating initramfs to high memory ...\n");
 		memcpy((u8*)bp->hdr.ramdisk_image, initramfs, bp->hdr.ramdisk_size);
 	} else {
-		bs_printk("Won't relocate initramfs, are you in SLE?\n");
+		npf_pprintf(&simplefb_putc, NULL, "Booting Linux without initramfs ...\n");
 	}
 #else
 	bp->hdr.ramdisk_image = (u32) initramfs;
@@ -277,12 +284,12 @@ static u32 multiboot_setup(void)
 	mb_header = (multiboot_header_t *)header_magic;
 
 	if (mb_header->checksum + (mb_header->magic + mb_header->flags) != 0) {
-		printf("Invalid Multiboot image! Expected checksum 0x%x, got 0x%x \n",
+		npf_pprintf(&simplefb_putc, NULL, "Invalid Multiboot image! Expected checksum 0x%x, got 0x%x \n",
 			   -mb_header->checksum, (mb_header->magic + mb_header->flags));
 		FATAL_HANG();
 	}
 
-	printf("Multiboot signature found! Image entry address is 0x%x\n", mb_header->entry_addr);
+	npf_pprintf(&simplefb_putc, NULL, "Multiboot signature found! Image entry address is 0x%x\n", mb_header->entry_addr);
 
 	/* fill in the multiboot module information: Multiboot image and initial ramdisk */
 	modules[0].mod_start = mb_header->load_addr;
@@ -325,7 +332,7 @@ int bootstub(void)
 	setup_idt();
 	setup_gdt();
 	simplefb_init();
-	bs_printk("Bootstub Version: 1.4 ...\n");
+	npf_pprintf(&simplefb_putc, NULL, "Bootstub Version: 1.4 ...\n");
 
 	memset(bp, 0, sizeof (struct boot_params));
 	sfi_setup_mmap(bp, mb_mmap);
@@ -333,21 +340,11 @@ int bootstub(void)
 
 	jmp = multiboot_setup();
 	if (!jmp) {
-		bs_printk("Using bzImage to boot\n");
+		npf_pprintf(&simplefb_putc, NULL, "Using bzImage to boot\n");
 		jmp = bzImage_setup(bp);
 	} else
-		bs_printk("Using multiboot image to boot\n");
+		npf_pprintf(&simplefb_putc, NULL, "Using multiboot image to boot\n");
 
-	bs_printk("Jump to kernel 32bit entry\n");
+	npf_pprintf(&simplefb_putc, NULL, "Jump to kernel 32bit entry\n");
 	return jmp;
-}
-
-void _putchar(char character)
-{
-	bs_simplefb_putc(character);
-}
-
-void bs_printk(const char *str)
-{
-	printf(str);
 }
