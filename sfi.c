@@ -23,20 +23,17 @@
 #include "mb.h"
 #include "sfi.h"
 
-#define SFI_BASE_ADDR		0x000E0000
-#define SFI_LENGTH		0x00020000
-
-static unsigned long sfi_search_mmap(unsigned long start, int len)
+unsigned long sfi_search_table(char *signature)
 {
 	unsigned long i = 0;
-	char *pchar = (char *)start;
+	char *pchar = (char *)SFI_BASE_ADDR;
 
-	for (i = 0; i < len; i++, pchar++) {
-		if (pchar[0] == 'M'
-			&& pchar[1] == 'M'
-			&& pchar[2] == 'A'
-			&& pchar[3] == 'P')
-			return start + i;
+	for (i = 0; i < (SFI_LENGTH); i++, pchar++) {
+		if (pchar[0] == signature[0]
+			&& pchar[1] == signature[1]
+			&& pchar[2] == signature[2]
+			&& pchar[3] == signature[3])
+			return SFI_BASE_ADDR + i;
 	}
 	return 0;
 }
@@ -102,7 +99,7 @@ void sfi_setup_mmap(struct boot_params *bp, memory_map_t *mb_mmap)
 	bp->e820_entries = 0;
 
 	/* search for sfi mmap table */
-	sb = (struct sfi_table *)sfi_search_mmap(SFI_BASE_ADDR, SFI_LENGTH);
+	sb = (struct sfi_table *)sfi_search_table(SFI_SIG_MMAP);
 	if (!sb) {
 		return;
 	}

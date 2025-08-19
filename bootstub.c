@@ -324,6 +324,7 @@ int bootstub(void)
 
 	setup_idt();
 	setup_gdt();
+	simplefb_init();
 	bs_printk("Bootstub Version: 1.4 ...\n");
 
 	memset(bp, 0, sizeof (struct boot_params));

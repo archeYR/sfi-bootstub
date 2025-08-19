@@ -11,6 +11,14 @@ struct simplefb_data {
 #define CHAR_HEIGHT 16
 #define TOP_BOTTOM_LINES 0
 
+/* GMA device IDs */
+#define DEV_GMA_MRST   0x41008086
+#define DEV_GMA_MDFLD  0x01308086
+#define DEV_GMA_CLTP   0x08c08086
+#define DEV_GMA_MRFLD  0x11808086
+#define DEV_GMA_MRFLD2 0x14808086
+#define INTEL_DEV_MASK 0xfff0ffff
+
 /*
  * Screen colors
  */
@@ -34,4 +42,6 @@ struct simplefb_data {
 
 /* GLOBALS ********************************************************************/
 #define ATTR(cFore, cBack)  ((cBack << 4) | cFore)
+
+extern void simplefb_init();
 extern void bs_simplefb_putc(unsigned char character);

@@ -2,23 +2,17 @@
  * Debug output via framebuffer. Mostly copypasted ReactOS FreeLoader code.
  */
 
+#include "bootparam.h"
 #include "bootstub.h"
 #include "simplefb.h"
+#include "mb.h"
+#include "sfi.h"
 
 /* Character coordinates */
 static int x = 0;
 static int y = 0;
 
 volatile struct simplefb_data framebufferData = {0};
-
-static void simplefb_init()
-{
-    /* See SFI page on ReactOS wiki for finding the framebuffer address */
-    framebufferData.BaseAddress        = 0x3f000000;
-    framebufferData.ScreenWidth        = 768;
-    framebufferData.ScreenHeight       = 1024;
-    framebufferData.PixelsPerScanLine  = 768;
-}
 
 static unsigned long
 AttrToSingleColor(unsigned char Attr)
@@ -129,11 +123,9 @@ PutChar(int Ch, unsigned char Attr, unsigned X, unsigned Y)
 void
 bs_simplefb_putc(unsigned char character)
 {
-	if (framebufferData.BaseAddress == 0)
-	{
-		simplefb_init();
-		ClearScreen(ATTR(COLOR_WHITE, COLOR_BLACK));
-	}
+    if (framebufferData.BaseAddress == 0xdeaddead ||
+        framebufferData.BaseAddress == 0)
+        return;
 
     if (y >= framebufferData.ScreenHeight/CHAR_HEIGHT)
     {
@@ -145,9 +137,64 @@ bs_simplefb_putc(unsigned char character)
     {
         y++;
         x = 0;
-        if (character == '\n')
-            return;
     }
 
-    PutChar(character, ATTR(COLOR_GRAY, COLOR_BLACK), x++, y);
+    if (character != '\n')
+        PutChar(character, ATTR(COLOR_GRAY, COLOR_BLACK), x++, y);
+}
+
+void simplefb_init()
+{
+    struct mcfg_table *mcfg;
+    volatile unsigned long *mmcfg_base, mmcfg_record = 0, *bar0;
+
+    /* Fetch the MCFG table */
+    if (!(mcfg = (struct mcfg_table *)sfi_search_table(ACPI_SIG_MCFG)))
+        goto failure;
+
+    /* Get MMCONFIG memory address */
+    mmcfg_base = (unsigned long *)mcfg->config_space[0].config_base[0];
+
+    /* Perform MMCONFIG scan for GMA devices */
+    while (1)
+    {
+        if (mmcfg_record > (((mcfg->config_space[0].end_bus_number + 1) << 20) - 1) / 4)
+            /* Did not find any GMA device */
+            goto failure;
+
+        switch((*(mmcfg_base + mmcfg_record) & INTEL_DEV_MASK))
+        {
+            case DEV_GMA_MRST:
+            case DEV_GMA_MDFLD:
+            case DEV_GMA_CLTP:
+            case DEV_GMA_MRFLD:
+            case DEV_GMA_MRFLD2:
+                /* Verify that this indeed is a display controller */
+                if (((*(mmcfg_base + mmcfg_record + 0x2) >> 16) == 0x0300))
+                    break;
+            default:
+                /* Not a GMA device. Move to another PCI device */
+                mmcfg_record += 1024;
+                continue;
+        }
+        break;
+    }
+
+    /* Get BAR0 start address in memory */
+    bar0 = (unsigned long *)*(mmcfg_base + mmcfg_record + 0x4);
+
+    /* Get GMA framebuffer address from PSB_BSM PCI register */
+    framebufferData.BaseAddress        = *(mmcfg_base  + mmcfg_record + 0x17);
+
+    /* Get device resolution from DPI_RESOLUTION GMA register */
+    framebufferData.ScreenWidth        = (*(bar0 + 0x2c08) & 0xffff);
+    framebufferData.ScreenHeight       = (*(bar0 + 0x2c08) >> 16);
+    framebufferData.PixelsPerScanLine  = (*(bar0 + 0x2c08) & 0xffff);
+
+    ClearScreen(ATTR(COLOR_WHITE, COLOR_BLACK));
+
+    return;
+
+failure:
+    framebufferData.BaseAddress        = 0xdeaddead;
 }
