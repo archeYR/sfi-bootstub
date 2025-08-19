@@ -332,7 +332,7 @@ int bootstub(void)
 	setup_idt();
 	setup_gdt();
 	simplefb_init();
-	npf_pprintf(&simplefb_putc, NULL, "Bootstub Version: 1.4 ...\n");
+	npf_pprintf(&simplefb_putc, NULL, "Bootstub Version: %s\n", GIT_SHA);
 
 	memset(bp, 0, sizeof (struct boot_params));
 	sfi_setup_mmap(bp, mb_mmap);
