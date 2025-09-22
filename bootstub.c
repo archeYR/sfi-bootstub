@@ -32,7 +32,7 @@
 #define FATAL_HANG()  { asm("cli"); while (1) { asm("nop"); } }
 
 static memory_map_t mb_mmap[E820MAX];
-u32 mb_magic, mb_info;
+u32 mb_magic, mb_info, *font_loc;
 
 // The bootloader expects the structure of boot_img_hdr with header
 // version 0 to be as follows:
@@ -196,7 +196,6 @@ static u32 bzImage_setup(struct boot_params *bp)
 
 	bp->hdr.cmd_line_ptr = BOOT_CMDLINE_OFFSET;
 	bp->hdr.cmdline_size = cmdline_len;
-#ifndef BUILD_RAMDUMP
 	bp->hdr.ramdisk_image = (bp->alt_mem_k*1024 - bp->hdr.ramdisk_size) & 0xFFFFF000;
 
 	if (!bzimage_size) {
@@ -210,9 +209,6 @@ static u32 bzImage_setup(struct boot_params *bp)
 	} else {
 		npf_pprintf(&simplefb_putc, NULL, "Booting Linux without initramfs ...\n");
 	}
-#else
-	bp->hdr.ramdisk_image = (u32) initramfs;
-#endif
 
 	while (1){
 		if (*(u32 *)ptr == SETUP_SIGNATURE && *(u32 *)(ptr+4) == 0)
@@ -326,8 +322,13 @@ int bootstub(void)
 	if (is_image_aosp(aosp->magic)) {
 		sh = (struct setup_header *)((unsigned  int)aosp->kernel_addr + \
 		                             (unsigned  int)offsetof(struct boot_params,hdr));
-	} else
+		/* Font should be appended to Bootstub (secondary loader) image */
+		font_loc = (u32 *)(aosp->second_addr + aosp->second_size - 1024);
+	} else {
 		sh = (struct setup_header *)SETUP_HEADER_OFFSET;
+		/* Font should be embedded into a boot image after Bootstub */
+		font_loc = (u32 *)FONT_OFFSET;
+	}
 
 	setup_idt();
 	setup_gdt();

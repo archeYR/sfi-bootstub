@@ -8,6 +8,9 @@
 #include "mb.h"
 #include "sfi.h"
 
+/* Font memory location */
+extern int *font_loc;
+
 /* Character coordinates */
 static int x = 0;
 static int y = 0;
@@ -72,7 +75,7 @@ OutputChar(unsigned char Char, unsigned X, unsigned Y, unsigned long FgColor, un
     unsigned Col;
     unsigned long Delta;
     Delta = (framebufferData.PixelsPerScanLine * 4 + 3) & ~ 0x3;
-    FontPtr = (u8 *)FONT_OFFSET + Char * 16;
+    FontPtr = (u8 *)font_loc + Char * 16;
     Pixel = (unsigned long *) ((char *) framebufferData.BaseAddress +
             (Y * SFB_CHAR_HEIGHT + TOP_BOTTOM_LINES) *  Delta + X * SFB_CHAR_WIDTH * 4);
 
