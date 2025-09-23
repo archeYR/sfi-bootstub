@@ -173,7 +173,7 @@ void simplefb_init()
             case DEV_GMA_MRFLD:
             case DEV_GMA_MRFLD2:
                 /* Verify that this indeed is a display controller */
-                if (((*(mmcfg_base + mmcfg_record + 0x2) >> 16) == 0x0300))
+                if ((*(mmcfg_base + mmcfg_record + 0x2) >> 24) == 0x03)
                     break;
             default:
                 /* Not a GMA device. Move to another PCI device */
@@ -192,7 +192,9 @@ void simplefb_init()
     /* Get device resolution from DPI_RESOLUTION GMA register */
     framebufferData.ScreenWidth        = (*(bar0 + 0x2c08) & 0xffff);
     framebufferData.ScreenHeight       = (*(bar0 + 0x2c08) >> 16);
-    framebufferData.PixelsPerScanLine  = (*(bar0 + 0x2c08) & 0xffff);
+
+    /* Get framebuffer stride from DSPASTRIDE GMA register */
+    framebufferData.PixelsPerScanLine  = (*(bar0 + 0x1c062) / 4);
 
     ClearScreen(ATTR(COLOR_WHITE, COLOR_BLACK));
 
