@@ -323,7 +323,7 @@ int bootstub(void)
 		sh = (struct setup_header *)((unsigned  int)aosp->kernel_addr + \
 		                             (unsigned  int)offsetof(struct boot_params,hdr));
 		/* Font should be appended to Bootstub (secondary loader) image */
-		font_loc = (u32 *)(aosp->second_addr + aosp->second_size - 1024);
+		font_loc = (u32 *)(aosp->second_addr + aosp->second_size - 4096);
 	} else {
 		sh = (struct setup_header *)SETUP_HEADER_OFFSET;
 		/* Font should be embedded into a boot image after Bootstub */
