@@ -61,6 +61,24 @@ typedef struct {
 	u32 shndx;
 } elf_section_header_table_t;
 
+/* Color info for indexed type framebuffer. */
+typedef struct color_indexed_mode
+{
+  u32 framebuffer_palette_addr;
+  u16 framebuffer_palette_num_colors;
+} color_indexed_mode_t;
+
+/* Color info for RGB type framebuffer. */
+typedef struct color_rgb_mode
+{
+  u8 framebuffer_red_field_position;
+  u8 framebuffer_red_mask_size;
+  u8 framebuffer_green_field_position;
+  u8 framebuffer_green_mask_size;
+  u8 framebuffer_blue_field_position;
+  u8 framebuffer_blue_mask_size;
+} color_rgb_mode_t;
+
 /* The Multiboot information.  */
 typedef struct {
 	u32 flags;
@@ -117,12 +135,11 @@ typedef struct {
 	u32 framebuffer_height;
 	u8 framebuffer_bpp;
 	u8 framebuffer_type;
-	u8 framebuffer_red_field_position;
-	u8 framebuffer_red_mask_size;
-	u8 framebuffer_green_field_position;
-	u8 framebuffer_green_mask_size;
-	u8 framebuffer_blue_field_position;
-	u8 framebuffer_blue_mask_size;
+	union
+	{
+		color_indexed_mode_t color_indexed;
+		color_rgb_mode_t color_rgb;
+	} color_info;
 } multiboot_info_t;
 
 /* The Multiboot header.  */

@@ -33,6 +33,7 @@
 
 static memory_map_t mb_mmap[E820MAX];
 u32 mb_magic, mb_info, *font_loc;
+volatile struct simplefb_data framebufferData;
 
 // The bootloader expects the structure of boot_img_hdr with header
 // version 0 to be as follows:
@@ -249,7 +250,7 @@ static u32 multiboot_setup(void)
 	static module_t modules[2];
 	multiboot_header_t *mb_header;
 	static multiboot_info_t mb = {
-		.flags = MBI_CMDLINE | MBI_MODULES | MBI_MEMMAP | MBI_FB,
+		.flags = MBI_CMDLINE | MBI_MODULES | MBI_MEMMAP,
 		.mmap_addr = (u32)mb_mmap,
 		.mods_count = 2,
 		.mods_addr = (u32)modules,
@@ -298,6 +299,26 @@ static u32 multiboot_setup(void)
 	modules[1].mod_end = modules[1].mod_start +
 	((is_image_aosp(aosp->magic)) ? aosp->ramdisk_size : *(u32 *)INITRD_SIZE_OFFSET);
 	modules[1].string = 0;
+
+	/* Fill Multiboot framebuffer information */
+	if (framebufferData.BaseAddress != 0xdeaddead)
+	{
+		mb.framebuffer_addr = framebufferData.BaseAddress;
+		mb.framebuffer_pitch = framebufferData.PixelsPerScanLine * 4;
+		mb.framebuffer_width = framebufferData.ScreenWidth;
+		mb.framebuffer_height = framebufferData.ScreenHeight;
+		/* Hardcoded X8R8G8B8 format */
+		mb.framebuffer_bpp = 32;
+		mb.framebuffer_type = 1;
+		mb.color_info.color_rgb.framebuffer_red_field_position = 8;
+		mb.color_info.color_rgb.framebuffer_red_mask_size = 8;
+		mb.color_info.color_rgb.framebuffer_green_field_position = 16;
+		mb.color_info.color_rgb.framebuffer_green_mask_size = 8;
+		mb.color_info.color_rgb.framebuffer_blue_field_position = 24;
+		mb.color_info.color_rgb.framebuffer_blue_mask_size = 8;
+
+		mb.flags |= MBI_FB;
+	}
 
 	for(i = 0; i < E820MAX; i++)
 		if (!mb_mmap[i].size)

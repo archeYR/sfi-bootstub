@@ -15,7 +15,7 @@ extern int *font_loc;
 static int x = 0;
 static int y = 0;
 
-volatile struct simplefb_data framebufferData = {0};
+extern volatile struct simplefb_data framebufferData;
 
 static unsigned long
 AttrToSingleColor(unsigned char Attr)
@@ -126,8 +126,7 @@ PutChar(int Ch, unsigned char Attr, unsigned X, unsigned Y)
 void
 simplefb_putc(int character, void *ctx)
 {
-    if (framebufferData.BaseAddress == 0xdeaddead ||
-        framebufferData.BaseAddress == 0)
+    if (framebufferData.BaseAddress == 0xdeaddead)
         return;
 
     if (y >= framebufferData.ScreenHeight/SFB_CHAR_HEIGHT)
