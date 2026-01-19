@@ -1,6 +1,6 @@
 ## SFI-Bootstub
 
-Bootstub is a Linux bootloader that is used on various Intel MID devices. This fork focuses on bringing the compatibility with newer Linux kernels as well as standard Multiboot images to the SFI devices. It also supports logging to device's linear framebuffer for feedback and debugging. Note that for generating a boot image with SFI-Bootstub, you have to use modified mkboot tool from https://github.com/archeYR/intel-ifwi-study.
+Bootstub is a Linux bootloader that is used on various Intel MID devices. This fork focuses on bringing the compatibility with newer Linux kernels as well as standard Multiboot images to the SFI devices. It also supports logging to device's linear framebuffer for feedback and debugging.
 
 ### Building:
 
@@ -15,9 +15,11 @@ PLATFORM=MOOREFIELD make
 
 ### Generating boot images with new Bootstub:
 
-For devices with Intel boot image format use `mkboot.sh` from https://github.com/archeYR/intel-ifwi-study
+For unlocked devices with Intel boot image format use `mboot` from https://github.com/archeYR/mboot
 
-For devices with AOSP boot image format:
+For locked devices with Intel boot image format use `mkboot.sh` from https://github.com/archeYR/intel-ifwi-study (included `key.pem` is known to work on some Clover Trail+ devices)
+
+For unlocked devices with AOSP boot image format:
 
 - Append a <a href="https://github.com/viler-int10h/vga-text-mode-fonts/blob/master/FONTS/PC-IBM/VGA8.F16">font</a> to Bootstub image:
 ```
